@@ -5,12 +5,12 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.5/firebas
 // Вставьте сюда реальный firebaseConfig из настроек вашего проекта Firebase.
 // Также включите Firestore Database и Anonymous Auth в Firebase Console.
 const firebaseConfig = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_YOUR_PROJECT_ID",
-  storageBucket: "PASTE_YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID",
-  appId: "PASTE_YOUR_APP_ID",
+  apiKey: "AIzaSyACpOo7soWcSDWRUlYvdMo6v7hJhApYnGg",
+  authDomain: "wishlist-745af.firebaseapp.com",
+  projectId: "wishlist-745af",
+  storageBucket: "wishlist-745af.firebasestorage.app",
+  messagingSenderId: "14410995349",
+  appId: "1:14410995349:web:fa4f49006d11262425ad9c"
 };
 
 const app = initializeApp(firebaseConfig);

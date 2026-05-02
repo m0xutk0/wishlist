@@ -1,21 +1,41 @@
-import { auth, db } from "./firebase.js";
+import { auth, db, signInWithGoogle } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+/*
+Firestore rules should be:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /wishlist/{docId} {
+      allow read: if true;
+      allow create, delete: if request.auth.token.email == "YOUR_GOOGLE_EMAIL@gmail.com";
+      allow update: if request.auth != null;
+    }
+  }
+}
+*/
+
+const OWNER_EMAIL = "zarnakovmaksim5@gmail.com";
 const wishlistCollection = collection(db, "wishlist");
 
 const titleInput = document.querySelector("#title");
 const linkInput = document.querySelector("#link");
 const priceInput = document.querySelector("#price");
 const addBtn = document.querySelector("#addBtn");
+const loginBtn = document.querySelector("#loginBtn");
+const userInfo = document.querySelector("#userInfo");
 const wishlist = document.querySelector("#wishlist");
-const OWNER_UID = "bxtwjxzzSvbuagJQJeTjCEP0Kit1";
+
+let currentUser = null;
 
 const statusLabels = {
   available: "Свободно",
@@ -25,8 +45,25 @@ const statusLabels = {
 
 addBtn.addEventListener("click", addItem);
 
+loginBtn.addEventListener("click", async () => {
+  try {
+    await signInWithGoogle();
+  } catch (e) {
+    console.error("Login error:", e);
+  }
+});
+
 onAuthStateChanged(auth, (user) => {
-  toggleOwnerControls(user);
+  currentUser = user;
+
+  if (user) {
+    console.log("User:", user.email);
+    userInfo.innerText = "Вы вошли как: " + user.email;
+  } else {
+    userInfo.innerText = "";
+  }
+
+  toggleOwnerControls();
 });
 
 // Firestore обновляет список в реальном времени у всех пользователей.
@@ -40,7 +77,7 @@ onSnapshot(wishlistCollection, (snapshot) => {
 });
 
 async function addItem() {
-  if (auth.currentUser?.uid !== OWNER_UID) {
+  if (!currentUser || currentUser.email !== OWNER_EMAIL) {
     alert("Только владелец может добавлять подарки");
     return;
   }
@@ -65,15 +102,6 @@ async function addItem() {
   linkInput.value = "";
   priceInput.value = "";
   titleInput.focus();
-}
-
-function toggleOwnerControls(user) {
-  if (user?.uid !== OWNER_UID) {
-    document.getElementById("addBtn").style.display = "none";
-    return;
-  }
-
-  document.getElementById("addBtn").style.display = "";
 }
 
 function renderItems(items) {
@@ -140,6 +168,16 @@ function renderItems(items) {
     purchasedBtn.addEventListener("click", () => updateStatus(item.id, "purchased"));
 
     actions.append(reserveBtn, purchasedBtn);
+
+    if (currentUser?.email === OWNER_EMAIL) {
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "action delete";
+      deleteBtn.type = "button";
+      deleteBtn.textContent = "Удалить";
+      deleteBtn.addEventListener("click", () => deleteItem(item.id));
+      actions.append(deleteBtn);
+    }
+
     card.append(actions);
     wishlist.append(card);
   });
@@ -148,6 +186,20 @@ function renderItems(items) {
 async function updateStatus(id, status) {
   const itemRef = doc(db, "wishlist", id);
   await updateDoc(itemRef, { status });
+}
+
+async function deleteItem(id) {
+  if (!currentUser || currentUser.email !== OWNER_EMAIL) {
+    alert("Только владелец может удалять подарки");
+    return;
+  }
+
+  const itemRef = doc(db, "wishlist", id);
+  await deleteDoc(itemRef);
+}
+
+function toggleOwnerControls() {
+  addBtn.style.display = currentUser?.email === OWNER_EMAIL ? "" : "none";
 }
 
 function normalizeLink(link) {

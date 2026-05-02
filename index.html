@@ -1,48 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Wishlist</title>
+    <title>Мой вишлист</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">Personal list</p>
-          <h1>My Wishlist</h1>
+          <p class="eyebrow" id="modeLabel">Публичный режим</p>
+          <h1>Мой вишлист</h1>
+          <p class="lead">
+            Выберите подарок и забронируйте его, чтобы остальные гости видели
+            статус.
+          </p>
         </div>
-        <p class="item-count" id="itemCount">0 items</p>
+        <div class="header-actions">
+          <button class="secondary-button" id="exportButton" type="button">
+            Экспорт JSON
+          </button>
+          <label class="secondary-button file-button">
+            Импорт JSON
+            <input id="importInput" type="file" accept="application/json" />
+          </label>
+        </div>
       </header>
 
-      <section class="panel" aria-labelledby="formTitle">
-        <h2 id="formTitle">Add a wish</h2>
-        <form class="wish-form" id="wishForm">
+      <section class="panel admin-only" id="adminPanel" aria-labelledby="formTitle">
+        <h2 id="formTitle">Добавить подарок</h2>
+        <form class="gift-form" id="giftForm">
           <label>
-            <span>Name</span>
+            <span>Название</span>
             <input
-              id="titleInput"
+              id="nameInput"
               name="name"
               type="text"
-              placeholder="Noise-cancelling headphones"
+              placeholder="Например, беспроводные наушники"
               required
             />
           </label>
 
           <label>
-            <span>Description</span>
+            <span>Описание</span>
             <textarea
               id="descriptionInput"
               name="description"
               rows="3"
-              placeholder="Color, size, notes, or why it is on the list"
+              placeholder="Цвет, размер, модель или любые важные детали"
             ></textarea>
           </label>
 
           <div class="form-grid">
             <label>
-              <span>Link</span>
+              <span>Ссылка</span>
               <input
                 id="linkInput"
                 name="link"
@@ -53,27 +65,29 @@
             </label>
 
             <label>
-              <span>Price</span>
+              <span>Цена</span>
               <input
                 id="priceInput"
                 name="price"
                 type="text"
-                placeholder="$99"
+                placeholder="5 000 ₽"
               />
             </label>
           </div>
 
-          <button class="primary-button" type="submit">Add item</button>
+          <button class="primary-button" type="submit">Добавить подарок</button>
         </form>
       </section>
 
       <section class="wishlist-section" aria-live="polite">
         <div class="section-heading">
-          <h2>Wishes</h2>
+          <h2>Подарки</h2>
+          <p class="item-count" id="itemCount">0 подарков</p>
         </div>
+
         <div class="wishlist" id="wishlist"></div>
         <p class="empty-state" id="emptyState">
-          Your wishlist is empty. Add something lovely above.
+          Вишлист пока пуст. В режиме владельца можно добавить первый подарок.
         </p>
       </section>
     </main>

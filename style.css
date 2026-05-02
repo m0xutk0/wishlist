@@ -8,8 +8,12 @@
   --accent: #0071e3;
   --accent-dark: #005bb5;
   --danger: #c5362f;
-  --reserved: #2f7d4f;
-  --reserved-bg: #eaf6ef;
+  --available: #2f7d4f;
+  --reserved: #c77718;
+  --purchased: #7a7a80;
+  --available-bg: #eaf6ef;
+  --reserved-bg: #fff3df;
+  --purchased-bg: #eeeeef;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
   --radius: 18px;
   --radius-sm: 12px;
@@ -35,6 +39,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -44,21 +49,21 @@ button {
 }
 
 .app-shell {
-  width: min(100% - 2rem, 980px);
+  width: min(100% - 2rem, 1040px);
   margin: 0 auto;
   padding: 48px 0;
 }
 
 .app-header {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 24px;
   margin-bottom: 24px;
 }
 
 .eyebrow {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;
@@ -68,13 +73,14 @@ button {
 
 h1,
 h2,
+h3,
 p {
   margin-top: 0;
 }
 
 h1 {
-  margin-bottom: 0;
-  font-size: clamp(2.2rem, 7vw, 4.5rem);
+  margin-bottom: 12px;
+  font-size: clamp(2.4rem, 7vw, 4.8rem);
   line-height: 1;
 }
 
@@ -83,15 +89,23 @@ h2 {
   font-size: 1.2rem;
 }
 
-.item-count {
-  margin-bottom: 8px;
+.lead {
+  max-width: 620px;
+  margin-bottom: 0;
   color: var(--muted);
-  white-space: nowrap;
+  font-size: 1.05rem;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .panel,
-.wish-card {
-  background: rgba(255, 255, 255, 0.82);
+.gift-card {
+  background: rgba(255, 255, 255, 0.84);
   border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
@@ -102,7 +116,11 @@ h2 {
   padding: 24px;
 }
 
-.wish-form {
+.admin-only.hidden {
+  display: none;
+}
+
+.gift-form {
   display: grid;
   gap: 16px;
 }
@@ -122,6 +140,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -141,6 +160,7 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: var(--accent);
   background: var(--surface);
@@ -148,9 +168,11 @@ textarea:focus {
 }
 
 .primary-button,
+.secondary-button,
 .card-button {
   border: 0;
   border-radius: 999px;
+  font-weight: 700;
   transition:
     transform var(--transition),
     background var(--transition),
@@ -163,12 +185,31 @@ textarea:focus {
   background: var(--accent);
   color: white;
   padding: 12px 22px;
-  font-weight: 700;
 }
 
 .primary-button:hover {
   background: var(--accent-dark);
   transform: translateY(-1px);
+}
+
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text);
+  padding: 10px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+}
+
+.secondary-button:hover {
+  transform: translateY(-1px);
+  background: white;
+}
+
+.file-button input {
+  display: none;
 }
 
 .wishlist-section {
@@ -182,13 +223,19 @@ textarea:focus {
   gap: 1rem;
 }
 
+.item-count {
+  margin-bottom: 18px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .wishlist {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 18px;
 }
 
-.wish-card {
+.gift-card {
   display: grid;
   gap: 14px;
   border-radius: var(--radius);
@@ -200,18 +247,14 @@ textarea:focus {
     border-color var(--transition);
 }
 
-.wish-card:hover {
+.gift-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.11);
 }
 
-.wish-card.reserved {
-  border-color: rgba(47, 125, 79, 0.35);
-}
-
 .card-top {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
 }
@@ -222,14 +265,49 @@ textarea:focus {
   line-height: 1.25;
 }
 
-.badge {
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   border-radius: 999px;
-  background: var(--reserved-bg);
-  color: var(--reserved);
-  padding: 4px 10px;
+  padding: 5px 10px;
   font-size: 0.78rem;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.status::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  content: "";
+}
+
+.status.available {
+  background: var(--available-bg);
+  color: var(--available);
+}
+
+.status.available::before {
+  background: var(--available);
+}
+
+.status.reserved {
+  background: var(--reserved-bg);
+  color: var(--reserved);
+}
+
+.status.reserved::before {
+  background: var(--reserved);
+}
+
+.status.purchased {
+  background: var(--purchased-bg);
+  color: var(--purchased);
+}
+
+.status.purchased::before {
+  background: var(--purchased);
 }
 
 .description {
@@ -255,6 +333,11 @@ textarea:focus {
   text-decoration: underline;
 }
 
+.admin-controls {
+  display: grid;
+  gap: 8px;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -266,7 +349,6 @@ textarea:focus {
   background: #eeeeef;
   color: var(--text);
   padding: 9px 14px;
-  font-weight: 700;
 }
 
 .card-button:hover {
@@ -274,7 +356,12 @@ textarea:focus {
   background: #e2e2e7;
 }
 
-.card-button.reserve.active {
+.card-button.reserve {
+  background: var(--available);
+  color: white;
+}
+
+.card-button.cancel {
   background: var(--reserved);
   color: white;
 }
@@ -310,16 +397,26 @@ textarea:focus {
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 760px) {
   .app-shell {
-    width: min(100% - 1rem, 980px);
+    width: min(100% - 1rem, 1040px);
     padding: 28px 0;
   }
 
   .app-header,
   .section-heading {
-    align-items: start;
+    align-items: flex-start;
     flex-direction: column;
+  }
+
+  .header-actions {
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .secondary-button,
+  .primary-button {
+    width: 100%;
   }
 
   .panel {
@@ -328,9 +425,5 @@ textarea:focus {
 
   .form-grid {
     grid-template-columns: 1fr;
-  }
-
-  .primary-button {
-    width: 100%;
   }
 }

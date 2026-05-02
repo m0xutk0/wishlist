@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Wishlist</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">Personal list</p>
+          <h1>My Wishlist</h1>
+        </div>
+        <p class="item-count" id="itemCount">0 items</p>
+      </header>
+
+      <section class="panel" aria-labelledby="formTitle">
+        <h2 id="formTitle">Add a wish</h2>
+        <form class="wish-form" id="wishForm">
+          <label>
+            <span>Name</span>
+            <input
+              id="titleInput"
+              name="name"
+              type="text"
+              placeholder="Noise-cancelling headphones"
+              required
+            />
+          </label>
+
+          <label>
+            <span>Description</span>
+            <textarea
+              id="descriptionInput"
+              name="description"
+              rows="3"
+              placeholder="Color, size, notes, or why it is on the list"
+            ></textarea>
+          </label>
+
+          <div class="form-grid">
+            <label>
+              <span>Link</span>
+              <input
+                id="linkInput"
+                name="link"
+                type="text"
+                inputmode="url"
+                placeholder="https://example.com"
+              />
+            </label>
+
+            <label>
+              <span>Price</span>
+              <input
+                id="priceInput"
+                name="price"
+                type="text"
+                placeholder="$99"
+              />
+            </label>
+          </div>
+
+          <button class="primary-button" type="submit">Add item</button>
+        </form>
+      </section>
+
+      <section class="wishlist-section" aria-live="polite">
+        <div class="section-heading">
+          <h2>Wishes</h2>
+        </div>
+        <div class="wishlist" id="wishlist"></div>
+        <p class="empty-state" id="emptyState">
+          Your wishlist is empty. Add something lovely above.
+        </p>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

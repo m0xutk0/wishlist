@@ -1,0 +1,336 @@
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-soft: #fafafa;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --line: #d9d9df;
+  --accent: #0071e3;
+  --accent-dark: #005bb5;
+  --danger: #c5362f;
+  --reserved: #2f7d4f;
+  --reserved-bg: #eaf6ef;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --transition: 180ms ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(0, 113, 227, 0.12), transparent 32rem),
+    var(--bg);
+  color: var(--text);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  line-height: 1.5;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  width: min(100% - 2rem, 980px);
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+.app-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(2.2rem, 7vw, 4.5rem);
+  line-height: 1;
+}
+
+h2 {
+  margin-bottom: 18px;
+  font-size: 1.2rem;
+}
+
+.item-count {
+  margin-bottom: 8px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.panel,
+.wish-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.panel {
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.wish-form {
+  display: grid;
+  gap: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text);
+  outline: none;
+  padding: 13px 14px;
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background var(--transition);
+}
+
+textarea {
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.14);
+}
+
+.primary-button,
+.card-button {
+  border: 0;
+  border-radius: 999px;
+  transition:
+    transform var(--transition),
+    background var(--transition),
+    color var(--transition),
+    opacity var(--transition);
+}
+
+.primary-button {
+  justify-self: start;
+  background: var(--accent);
+  color: white;
+  padding: 12px 22px;
+  font-weight: 700;
+}
+
+.primary-button:hover {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.wishlist-section {
+  margin-top: 34px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wishlist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.wish-card {
+  display: grid;
+  gap: 14px;
+  border-radius: var(--radius);
+  padding: 20px;
+  animation: fadeUp 260ms ease both;
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    border-color var(--transition);
+}
+
+.wish-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.11);
+}
+
+.wish-card.reserved {
+  border-color: rgba(47, 125, 79, 0.35);
+}
+
+.card-top {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.25;
+}
+
+.badge {
+  border-radius: 999px;
+  background: var(--reserved-bg);
+  color: var(--reserved);
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.description {
+  margin: 0;
+  color: var(--muted);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.meta a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.meta a:hover {
+  text-decoration: underline;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.card-button {
+  background: #eeeeef;
+  color: var(--text);
+  padding: 9px 14px;
+  font-weight: 700;
+}
+
+.card-button:hover {
+  transform: translateY(-1px);
+  background: #e2e2e7;
+}
+
+.card-button.reserve.active {
+  background: var(--reserved);
+  color: white;
+}
+
+.card-button.delete {
+  color: var(--danger);
+}
+
+.empty-state {
+  display: none;
+  margin: 24px 0 0;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.56);
+  color: var(--muted);
+  padding: 28px;
+  text-align: center;
+}
+
+.empty-state.visible {
+  display: block;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 680px) {
+  .app-shell {
+    width: min(100% - 1rem, 980px);
+    padding: 28px 0;
+  }
+
+  .app-header,
+  .section-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .panel {
+    padding: 18px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-button {
+    width: 100%;
+  }
+}

@@ -5,8 +5,13 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
+  query,
+  setDoc,
   updateDoc,
+  where,
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 /*
@@ -17,8 +22,20 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /wishlist/{docId} {
       allow read: if true;
-      allow create, delete: if request.auth.token.email == "YOUR_GOOGLE_EMAIL@gmail.com";
-      allow update: if request.auth != null;
+
+      // only authenticated users can update; banned users are blocked by rules
+      allow update: if request.auth != null
+        && !exists(/databases/$(database)/documents/bannedUsers/$(request.auth.token.email));
+
+      // only owner can create/delete
+      allow create, delete:
+        if request.auth.token.email == "OWNER_EMAIL@gmail.com";
+    }
+
+    match /bannedUsers/{docId} {
+      allow read: if false;
+      allow write:
+        if request.auth.token.email == "OWNER_EMAIL@gmail.com";
     }
   }
 }
@@ -26,16 +43,25 @@ service cloud.firestore {
 
 const OWNER_EMAIL = "zarnakovmaksim5@gmail.com";
 const wishlistCollection = collection(db, "wishlist");
+const bannedUsersCollection = collection(db, "bannedUsers");
 
 const titleInput = document.querySelector("#title");
 const linkInput = document.querySelector("#link");
 const priceInput = document.querySelector("#price");
 const addBtn = document.querySelector("#addBtn");
 const loginBtn = document.querySelector("#loginBtn");
+const adminPanelBtn = document.querySelector("#adminPanelBtn");
+const deleteAllBtn = document.querySelector("#deleteAllBtn");
+const jsonInput = document.querySelector("#jsonInput");
+const ownerPanel = document.querySelector("#ownerPanel");
+const adminPanel = document.querySelector("#adminPanel");
+const adminList = document.querySelector("#adminList");
+const authNotice = document.querySelector("#authNotice");
 const userInfo = document.querySelector("#userInfo");
 const wishlist = document.querySelector("#wishlist");
 
 let currentUser = null;
+let currentItems = [];
 
 const statusLabels = {
   available: "Свободно",
@@ -44,6 +70,9 @@ const statusLabels = {
 };
 
 addBtn.addEventListener("click", addItem);
+adminPanelBtn.addEventListener("click", openAdminPanel);
+deleteAllBtn.addEventListener("click", deleteAllItems);
+jsonInput.addEventListener("change", importJson);
 
 loginBtn.addEventListener("click", async () => {
   try {
@@ -61,24 +90,33 @@ onAuthStateChanged(auth, (user) => {
     userInfo.innerText = "Вы вошли как: " + user.email;
   } else {
     userInfo.innerText = "";
+    adminPanel.classList.add("hidden");
   }
 
-  toggleOwnerControls();
+  updateAuthUi();
+  renderItems(currentItems);
+  renderAdminPanel();
 });
 
 // Firestore обновляет список в реальном времени у всех пользователей.
 onSnapshot(wishlistCollection, (snapshot) => {
-  const items = snapshot.docs.map((itemDoc) => ({
+  currentItems = snapshot.docs.map((itemDoc) => ({
     id: itemDoc.id,
     ...itemDoc.data(),
   }));
 
-  renderItems(items);
+  renderItems(currentItems);
+  renderAdminPanel();
 });
 
 async function addItem() {
-  if (!currentUser || currentUser.email !== OWNER_EMAIL) {
+  if (!isOwner()) {
     alert("Только владелец может добавлять подарки");
+    return;
+  }
+
+  if (await checkIfBanned(currentUser.email)) {
+    alert("Вы заблокированы владельцем");
     return;
   }
 
@@ -96,6 +134,8 @@ async function addItem() {
     link,
     price,
     status: "available",
+    reservedBy: null,
+    purchasedBy: null,
   });
 
   titleInput.value = "";
@@ -110,12 +150,13 @@ function renderItems(items) {
   if (items.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty";
-    empty.textContent = "Список пока пуст. Добавьте первый подарок.";
+    empty.textContent = "Список пока пуст.";
     wishlist.append(empty);
     return;
   }
 
   items.forEach((item) => {
+    const normalizedItem = normalizeItem(item);
     const card = document.createElement("article");
     card.className = "card";
 
@@ -124,26 +165,26 @@ function renderItems(items) {
 
     const title = document.createElement("h2");
     title.className = "card-title";
-    title.textContent = item.title;
+    title.textContent = normalizedItem.title;
 
     const badge = document.createElement("span");
-    badge.className = `badge ${item.status}`;
-    badge.textContent = statusLabels[item.status] || item.status;
+    badge.className = `badge ${normalizedItem.status}`;
+    badge.textContent = statusLabels[normalizedItem.status] || normalizedItem.status;
 
     header.append(title, badge);
     card.append(header);
 
-    if (item.price) {
+    if (normalizedItem.price) {
       const price = document.createElement("p");
       price.className = "price";
-      price.textContent = item.price;
+      price.textContent = normalizedItem.price;
       card.append(price);
     }
 
-    if (item.link) {
+    if (normalizedItem.link) {
       const link = document.createElement("a");
       link.className = "item-link";
-      link.href = item.link;
+      link.href = normalizedItem.link;
       link.target = "_blank";
       link.rel = "noreferrer";
       link.textContent = "Открыть ссылку";
@@ -157,24 +198,27 @@ function renderItems(items) {
     reserveBtn.className = "action reserve";
     reserveBtn.type = "button";
     reserveBtn.textContent = "Забронировать";
-    reserveBtn.disabled = item.status === "reserved" || item.status === "purchased";
-    reserveBtn.addEventListener("click", () => updateStatus(item.id, "reserved"));
+    reserveBtn.disabled =
+      !currentUser ||
+      normalizedItem.status === "reserved" ||
+      normalizedItem.status === "purchased";
+    reserveBtn.addEventListener("click", () => updateStatus(normalizedItem.id, "reserved"));
 
     const purchasedBtn = document.createElement("button");
     purchasedBtn.className = "action purchase";
     purchasedBtn.type = "button";
     purchasedBtn.textContent = "Куплено";
-    purchasedBtn.disabled = item.status === "purchased";
-    purchasedBtn.addEventListener("click", () => updateStatus(item.id, "purchased"));
+    purchasedBtn.disabled = !currentUser || normalizedItem.status === "purchased";
+    purchasedBtn.addEventListener("click", () => updateStatus(normalizedItem.id, "purchased"));
 
     actions.append(reserveBtn, purchasedBtn);
 
-    if (currentUser?.email === OWNER_EMAIL) {
+    if (isOwner()) {
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "action delete";
       deleteBtn.type = "button";
       deleteBtn.textContent = "Удалить";
-      deleteBtn.addEventListener("click", () => deleteItem(item.id));
+      deleteBtn.addEventListener("click", () => deleteItem(normalizedItem.id));
       actions.append(deleteBtn);
     }
 
@@ -184,13 +228,42 @@ function renderItems(items) {
 }
 
 async function updateStatus(id, status) {
+  if (!requireAuth()) {
+    return;
+  }
+
+  if (await checkIfBanned(currentUser.email)) {
+    alert("Вы заблокированы владельцем");
+    return;
+  }
+
   const itemRef = doc(db, "wishlist", id);
-  await updateDoc(itemRef, { status });
+  const update = { status };
+
+  if (status === "reserved") {
+    update.reservedBy = currentUser.email;
+    update.purchasedBy = null;
+  }
+
+  if (status === "purchased") {
+    update.purchasedBy = currentUser.email;
+  }
+
+  try {
+    await updateDoc(itemRef, update);
+  } catch (error) {
+    handleActionError(error);
+  }
 }
 
 async function deleteItem(id) {
-  if (!currentUser || currentUser.email !== OWNER_EMAIL) {
+  if (!isOwner()) {
     alert("Только владелец может удалять подарки");
+    return;
+  }
+
+  if (await checkIfBanned(currentUser.email)) {
+    alert("Вы заблокированы владельцем");
     return;
   }
 
@@ -198,8 +271,267 @@ async function deleteItem(id) {
   await deleteDoc(itemRef);
 }
 
-function toggleOwnerControls() {
-  addBtn.style.display = currentUser?.email === OWNER_EMAIL ? "" : "none";
+async function deleteAllItems() {
+  if (!isOwner()) {
+    alert("Только владелец может удалять подарки");
+    return;
+  }
+
+  if (await checkIfBanned(currentUser.email)) {
+    alert("Вы заблокированы владельцем");
+    return;
+  }
+
+  if (!confirm("Удалить весь список желаний?")) {
+    return;
+  }
+
+  const snapshot = await getDocs(wishlistCollection);
+  const batch = writeBatch(db);
+
+  snapshot.forEach((itemDoc) => {
+    batch.delete(itemDoc.ref);
+  });
+
+  await batch.commit();
+}
+
+function importJson(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    return;
+  }
+
+  if (!isOwner()) {
+    alert("Только владелец может загружать JSON");
+    jsonInput.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.addEventListener("load", async () => {
+    try {
+      if (await checkIfBanned(currentUser.email)) {
+        alert("Вы заблокированы владельцем");
+        return;
+      }
+
+      const importedItems = JSON.parse(reader.result);
+      if (!Array.isArray(importedItems)) {
+        throw new Error("JSON должен быть массивом подарков");
+      }
+
+      await replaceWishlist(normalizeImportedItems(importedItems));
+    } catch (error) {
+      alert("Не удалось загрузить JSON: " + error.message);
+    } finally {
+      jsonInput.value = "";
+    }
+  });
+
+  reader.readAsText(file);
+}
+
+async function replaceWishlist(items) {
+  const snapshot = await getDocs(wishlistCollection);
+  const batch = writeBatch(db);
+
+  snapshot.forEach((itemDoc) => {
+    batch.delete(itemDoc.ref);
+  });
+
+  items.forEach((item) => {
+    const itemRef = doc(wishlistCollection);
+    batch.set(itemRef, item);
+  });
+
+  await batch.commit();
+}
+
+async function checkIfBanned(email) {
+  if (!email) {
+    return false;
+  }
+
+  try {
+    const bannedQuery = query(bannedUsersCollection, where("email", "==", email));
+    const snapshot = await getDocs(bannedQuery);
+    return !snapshot.empty;
+  } catch (error) {
+    console.warn("Не удалось проверить бан-лист на клиенте:", error);
+    return false;
+  }
+}
+
+function requireAuth() {
+  if (!currentUser) {
+    alert("Войдите через Google, чтобы взаимодействовать со списком");
+    return false;
+  }
+
+  return true;
+}
+
+function openAdminPanel() {
+  if (!isOwner()) {
+    return;
+  }
+
+  adminPanel.classList.toggle("hidden");
+  renderAdminPanel();
+}
+
+async function banUser(email) {
+  if (!isOwner() || !email) {
+    return;
+  }
+
+  await setDoc(doc(db, "bannedUsers", email), { email });
+  alert("Пользователь заблокирован: " + email);
+}
+
+async function resetItem(id) {
+  if (!isOwner()) {
+    return;
+  }
+
+  const itemRef = doc(db, "wishlist", id);
+  await updateDoc(itemRef, {
+    status: "available",
+    reservedBy: null,
+    purchasedBy: null,
+  });
+}
+
+function renderAdminPanel() {
+  if (!isOwner() || adminPanel.classList.contains("hidden")) {
+    adminList.innerHTML = "";
+    return;
+  }
+
+  adminList.innerHTML = "";
+
+  if (currentItems.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "Действий пользователей пока нет.";
+    adminList.append(empty);
+    return;
+  }
+
+  currentItems.map(normalizeItem).forEach((item) => {
+    const row = document.createElement("article");
+    row.className = "admin-item";
+
+    const title = document.createElement("h3");
+    title.textContent = item.title;
+
+    const reservedBy = document.createElement("p");
+    reservedBy.textContent = "Бронь: " + (item.reservedBy || "нет");
+
+    const purchasedBy = document.createElement("p");
+    purchasedBy.textContent = "Покупка: " + (item.purchasedBy || "нет");
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+
+    if (item.status === "reserved") {
+      const resetBtn = document.createElement("button");
+      resetBtn.className = "action";
+      resetBtn.type = "button";
+      resetBtn.textContent = "Снять бронь";
+      resetBtn.addEventListener("click", () => resetItem(item.id));
+      actions.append(resetBtn);
+    }
+
+    if (item.status === "purchased") {
+      const resetPurchaseBtn = document.createElement("button");
+      resetPurchaseBtn.className = "action";
+      resetPurchaseBtn.type = "button";
+      resetPurchaseBtn.textContent = "Отменить покупку";
+      resetPurchaseBtn.addEventListener("click", () => resetItem(item.id));
+      actions.append(resetPurchaseBtn);
+    }
+
+    if (item.reservedBy) {
+      const banReservedBtn = document.createElement("button");
+      banReservedBtn.className = "action delete";
+      banReservedBtn.type = "button";
+      banReservedBtn.textContent = "Забанить пользователя";
+      banReservedBtn.addEventListener("click", () => banUser(item.reservedBy));
+      actions.append(banReservedBtn);
+    }
+
+    if (item.purchasedBy) {
+      const banPurchasedBtn = document.createElement("button");
+      banPurchasedBtn.className = "action delete";
+      banPurchasedBtn.type = "button";
+      banPurchasedBtn.textContent = "Забанить покупателя";
+      banPurchasedBtn.addEventListener("click", () => banUser(item.purchasedBy));
+      actions.append(banPurchasedBtn);
+    }
+
+    row.append(title, reservedBy, purchasedBy, actions);
+    adminList.append(row);
+  });
+}
+
+function normalizeImportedItems(items) {
+  return items
+    .filter((item) => item && (item.title || item.name))
+    .map((item) => {
+      const status = ["available", "reserved", "purchased"].includes(item.status)
+        ? item.status
+        : "available";
+
+      return {
+        title: String(item.title || item.name).trim(),
+        link: normalizeLink(item.link ? String(item.link).trim() : ""),
+        price: item.price ? String(item.price).trim() : "",
+        status,
+        reservedBy: item.reservedBy || null,
+        purchasedBy: item.purchasedBy || null,
+      };
+    });
+}
+
+function normalizeItem(item) {
+  return {
+    id: item.id,
+    title: item.title || "",
+    link: item.link || "",
+    price: item.price || "",
+    status: item.status || "available",
+    reservedBy: item.reservedBy || null,
+    purchasedBy: item.purchasedBy || null,
+  };
+}
+
+function updateAuthUi() {
+  loginBtn.style.display = currentUser ? "none" : "";
+  authNotice.classList.toggle("hidden", Boolean(currentUser));
+  ownerPanel.classList.toggle("hidden", !isOwner());
+  adminPanelBtn.style.display = isOwner() ? "" : "none";
+
+  if (!isOwner()) {
+    adminPanel.classList.add("hidden");
+  }
+}
+
+function isOwner() {
+  return currentUser?.email === OWNER_EMAIL;
+}
+
+function handleActionError(error) {
+  console.error("Action error:", error);
+
+  if (error.code === "permission-denied") {
+    alert("Вы заблокированы владельцем");
+    return;
+  }
+
+  alert("Не удалось выполнить действие. Попробуйте позже.");
 }
 
 function normalizeLink(link) {

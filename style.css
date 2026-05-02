@@ -72,6 +72,7 @@ h1 {
 }
 
 .panel,
+.admin-panel,
 .card {
   background: rgba(255, 255, 255, 0.84);
   border: 1px solid rgba(255, 255, 255, 0.72);
@@ -84,6 +85,22 @@ h1 {
   padding: 18px;
 }
 
+.admin-panel {
+  border-radius: var(--radius);
+  margin-top: 18px;
+  padding: 20px;
+}
+
+.admin-panel.hidden,
+.auth-notice.hidden {
+  display: none;
+}
+
+.admin-panel h2 {
+  margin: 0 0 14px;
+  font-size: 1.1rem;
+}
+
 .auth-bar {
   display: flex;
   align-items: center;
@@ -92,16 +109,36 @@ h1 {
   margin-bottom: 14px;
 }
 
+.auth-notice {
+  margin: 0;
+  border-radius: var(--radius-sm);
+  background: #fff7e8;
+  color: #9a5b0b;
+  padding: 12px 14px;
+  font-weight: 700;
+}
+
 #userInfo {
   color: var(--muted);
   font-size: 0.92rem;
   overflow-wrap: anywhere;
 }
 
+.owner-panel.hidden {
+  display: none;
+}
+
 .form {
   display: grid;
   grid-template-columns: 1.2fr 1.2fr 0.7fr auto;
   gap: 12px;
+}
+
+.owner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 input {
@@ -127,6 +164,9 @@ input:focus {
 
 #addBtn,
 #loginBtn,
+#adminPanelBtn,
+.file-button,
+.danger-button,
 .action {
   border: 0;
   border-radius: 999px;
@@ -137,15 +177,26 @@ input:focus {
     opacity var(--transition);
 }
 
-#loginBtn {
+#loginBtn,
+#adminPanelBtn,
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: #eeeeef;
   color: var(--text);
   padding: 12px 18px;
 }
 
-#loginBtn:hover {
+#loginBtn:hover,
+#adminPanelBtn:hover,
+.file-button:hover {
   background: #e2e2e7;
   transform: translateY(-1px);
+}
+
+.file-button input {
+  display: none;
 }
 
 #addBtn {
@@ -159,11 +210,46 @@ input:focus {
   transform: translateY(-1px);
 }
 
+.danger-button {
+  background: #fff0ee;
+  color: #c5362f;
+  padding: 12px 18px;
+}
+
+.danger-button:hover {
+  background: #ffe1de;
+  transform: translateY(-1px);
+}
+
 .wishlist {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 18px;
   margin-top: 28px;
+}
+
+.admin-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-item {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.64);
+  padding: 14px;
+}
+
+.admin-item h3,
+.admin-item p {
+  margin: 0;
+}
+
+.admin-item p {
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 .card {
@@ -330,8 +416,15 @@ input:focus {
     flex-direction: column;
   }
 
+  .owner-actions {
+    flex-direction: column;
+  }
+
   #addBtn,
-  #loginBtn {
+  #loginBtn,
+  #adminPanelBtn,
+  .file-button,
+  .danger-button {
     min-height: 48px;
   }
 }

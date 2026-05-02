@@ -13,18 +13,42 @@
         <h1>Мой список желаний</h1>
       </section>
 
-      <section class="panel" aria-label="Добавить подарок">
+      <section class="panel" aria-label="Управление списком">
         <div class="auth-bar">
           <button id="loginBtn" type="button">Войти через Google</button>
+          <button id="adminPanelBtn" type="button" style="display: none">
+            Панель владельца
+          </button>
           <div id="userInfo"></div>
         </div>
 
-        <div class="form">
-          <input id="title" type="text" placeholder="Название" autocomplete="off" />
-          <input id="link" type="url" placeholder="Ссылка" autocomplete="off" />
-          <input id="price" type="text" placeholder="Цена" autocomplete="off" />
-          <button id="addBtn" type="button">Добавить</button>
+        <p class="auth-notice" id="authNotice">
+          Войдите через Google, чтобы взаимодействовать со списком
+        </p>
+
+        <div class="owner-panel hidden" id="ownerPanel">
+          <div class="form">
+            <input id="title" type="text" placeholder="Название" autocomplete="off" />
+            <input id="link" type="url" placeholder="Ссылка" autocomplete="off" />
+            <input id="price" type="text" placeholder="Цена" autocomplete="off" />
+            <button id="addBtn" type="button">Добавить</button>
+          </div>
+
+          <div class="owner-actions">
+            <label class="file-button">
+              Загрузить JSON
+              <input id="jsonInput" type="file" accept="application/json" />
+            </label>
+            <button id="deleteAllBtn" class="danger-button" type="button">
+              Удалить всё
+            </button>
+          </div>
         </div>
+      </section>
+
+      <section class="admin-panel hidden" id="adminPanel">
+        <h2>Владелец просматривает действия пользователей</h2>
+        <div class="admin-list" id="adminList"></div>
       </section>
 
       <section class="wishlist" id="wishlist" aria-live="polite"></section>

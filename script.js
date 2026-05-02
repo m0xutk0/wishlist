@@ -1,4 +1,5 @@
-import { db } from "./firebase.js";
+import { auth, db } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   addDoc,
   collection,
@@ -14,6 +15,7 @@ const linkInput = document.querySelector("#link");
 const priceInput = document.querySelector("#price");
 const addBtn = document.querySelector("#addBtn");
 const wishlist = document.querySelector("#wishlist");
+const OWNER_UID = "bxtwjxzzSvbuagJQJeTjCEP0Kit1";
 
 const statusLabels = {
   available: "Свободно",
@@ -22,6 +24,10 @@ const statusLabels = {
 };
 
 addBtn.addEventListener("click", addItem);
+
+onAuthStateChanged(auth, (user) => {
+  toggleOwnerControls(user);
+});
 
 // Firestore обновляет список в реальном времени у всех пользователей.
 onSnapshot(wishlistCollection, (snapshot) => {
@@ -34,6 +40,11 @@ onSnapshot(wishlistCollection, (snapshot) => {
 });
 
 async function addItem() {
+  if (auth.currentUser?.uid !== OWNER_UID) {
+    alert("Только владелец может добавлять подарки");
+    return;
+  }
+
   const title = titleInput.value.trim();
   const link = normalizeLink(linkInput.value.trim());
   const price = priceInput.value.trim();
@@ -54,6 +65,15 @@ async function addItem() {
   linkInput.value = "";
   priceInput.value = "";
   titleInput.focus();
+}
+
+function toggleOwnerControls(user) {
+  if (user?.uid !== OWNER_UID) {
+    document.getElementById("addBtn").style.display = "none";
+    return;
+  }
+
+  document.getElementById("addBtn").style.display = "";
 }
 
 function renderItems(items) {

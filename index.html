@@ -3,95 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Мой вишлист</title>
+    <title>Мой список желаний</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main class="app-shell">
-      <header class="app-header">
-        <div>
-          <p class="eyebrow" id="modeLabel">Публичный режим</p>
-          <h1>Мой вишлист</h1>
-          <p class="lead">
-            Выберите подарок и забронируйте его, чтобы остальные гости видели
-            статус.
-          </p>
-        </div>
-        <div class="header-actions">
-          <button class="secondary-button" id="exportButton" type="button">
-            Экспорт JSON
-          </button>
-          <label class="secondary-button file-button">
-            Импорт JSON
-            <input id="importInput" type="file" accept="application/json" />
-          </label>
-        </div>
-      </header>
-
-      <section class="panel admin-only" id="adminPanel" aria-labelledby="formTitle">
-        <h2 id="formTitle">Добавить подарок</h2>
-        <form class="gift-form" id="giftForm">
-          <label>
-            <span>Название</span>
-            <input
-              id="nameInput"
-              name="name"
-              type="text"
-              placeholder="Например, беспроводные наушники"
-              required
-            />
-          </label>
-
-          <label>
-            <span>Описание</span>
-            <textarea
-              id="descriptionInput"
-              name="description"
-              rows="3"
-              placeholder="Цвет, размер, модель или любые важные детали"
-            ></textarea>
-          </label>
-
-          <div class="form-grid">
-            <label>
-              <span>Ссылка</span>
-              <input
-                id="linkInput"
-                name="link"
-                type="text"
-                inputmode="url"
-                placeholder="https://example.com"
-              />
-            </label>
-
-            <label>
-              <span>Цена</span>
-              <input
-                id="priceInput"
-                name="price"
-                type="text"
-                placeholder="5 000 ₽"
-              />
-            </label>
-          </div>
-
-          <button class="primary-button" type="submit">Добавить подарок</button>
-        </form>
+    <main class="app">
+      <section class="hero">
+        <p class="eyebrow">Wishlist</p>
+        <h1>Мой список желаний</h1>
       </section>
 
-      <section class="wishlist-section" aria-live="polite">
-        <div class="section-heading">
-          <h2>Подарки</h2>
-          <p class="item-count" id="itemCount">0 подарков</p>
+      <section class="panel" aria-label="Добавить подарок">
+        <div class="form">
+          <input id="title" type="text" placeholder="Название" autocomplete="off" />
+          <input id="link" type="url" placeholder="Ссылка" autocomplete="off" />
+          <input id="price" type="text" placeholder="Цена" autocomplete="off" />
+          <button id="addBtn" type="button">Добавить</button>
         </div>
-
-        <div class="wishlist" id="wishlist"></div>
-        <p class="empty-state" id="emptyState">
-          Вишлист пока пуст. В режиме владельца можно добавить первый подарок.
-        </p>
       </section>
+
+      <section class="wishlist" id="wishlist" aria-live="polite"></section>
     </main>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>

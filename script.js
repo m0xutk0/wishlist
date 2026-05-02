@@ -8,6 +8,7 @@ import {
   getDocs,
   onSnapshot,
   query,
+  serverTimestamp,
   setDoc,
   updateDoc,
   where,
@@ -23,8 +24,9 @@ service cloud.firestore {
     match /wishlist/{docId} {
       allow read: if true;
 
-      // only authenticated users can update; banned users are blocked by rules
+      // only Google-authenticated users can update; banned users are blocked
       allow update: if request.auth != null
+        && request.auth.token.email != null
         && !exists(/databases/$(database)/documents/bannedUsers/$(request.auth.token.email));
 
       // only owner can create/delete
@@ -37,13 +39,22 @@ service cloud.firestore {
       allow write:
         if request.auth.token.email == "OWNER_EMAIL@gmail.com";
     }
+
+    match /siteState/{docId} {
+      allow read: if true;
+      allow write:
+        if request.auth.token.email == "OWNER_EMAIL@gmail.com";
+    }
   }
 }
 */
 
 const OWNER_EMAIL = "zarnakovmaksim5@gmail.com";
+const ADMIN_NOTICE_TTL = 24 * 60 * 60 * 1000;
+
 const wishlistCollection = collection(db, "wishlist");
 const bannedUsersCollection = collection(db, "bannedUsers");
+const adminPanelStateRef = doc(db, "siteState", "adminPanel");
 
 const titleInput = document.querySelector("#title");
 const linkInput = document.querySelector("#link");
@@ -57,6 +68,7 @@ const ownerPanel = document.querySelector("#ownerPanel");
 const adminPanel = document.querySelector("#adminPanel");
 const adminList = document.querySelector("#adminList");
 const authNotice = document.querySelector("#authNotice");
+const adminOpenNotice = document.querySelector("#adminOpenNotice");
 const userInfo = document.querySelector("#userInfo");
 const wishlist = document.querySelector("#wishlist");
 
@@ -83,11 +95,12 @@ loginBtn.addEventListener("click", async () => {
 });
 
 onAuthStateChanged(auth, (user) => {
-  currentUser = user;
+  // Старые anonymous-сессии Firebase не имеют email, поэтому считаем их гостями.
+  currentUser = user?.email ? user : null;
 
-  if (user) {
-    console.log("User:", user.email);
-    userInfo.innerText = "Вы вошли как: " + user.email;
+  if (currentUser) {
+    console.log("User:", currentUser.email);
+    userInfo.innerText = "Вы вошли как: " + currentUser.email;
   } else {
     userInfo.innerText = "";
     adminPanel.classList.add("hidden");
@@ -107,6 +120,11 @@ onSnapshot(wishlistCollection, (snapshot) => {
 
   renderItems(currentItems);
   renderAdminPanel();
+});
+
+// Все пользователи видят время последнего открытия панели владельца в течение 1 дня.
+onSnapshot(adminPanelStateRef, (snapshot) => {
+  renderAdminOpenNotice(snapshot.data());
 });
 
 async function addItem() {
@@ -199,7 +217,7 @@ function renderItems(items) {
     reserveBtn.type = "button";
     reserveBtn.textContent = "Забронировать";
     reserveBtn.disabled =
-      !currentUser ||
+      !isGoogleUser() ||
       normalizedItem.status === "reserved" ||
       normalizedItem.status === "purchased";
     reserveBtn.addEventListener("click", () => updateStatus(normalizedItem.id, "reserved"));
@@ -208,7 +226,7 @@ function renderItems(items) {
     purchasedBtn.className = "action purchase";
     purchasedBtn.type = "button";
     purchasedBtn.textContent = "Куплено";
-    purchasedBtn.disabled = !currentUser || normalizedItem.status === "purchased";
+    purchasedBtn.disabled = !isGoogleUser() || normalizedItem.status === "purchased";
     purchasedBtn.addEventListener("click", () => updateStatus(normalizedItem.id, "purchased"));
 
     actions.append(reserveBtn, purchasedBtn);
@@ -365,7 +383,7 @@ async function checkIfBanned(email) {
 }
 
 function requireAuth() {
-  if (!currentUser) {
+  if (!isGoogleUser()) {
     alert("Войдите через Google, чтобы взаимодействовать со списком");
     return false;
   }
@@ -373,12 +391,25 @@ function requireAuth() {
   return true;
 }
 
-function openAdminPanel() {
+async function openAdminPanel() {
   if (!isOwner()) {
     return;
   }
 
+  const willOpen = adminPanel.classList.contains("hidden");
   adminPanel.classList.toggle("hidden");
+
+  if (willOpen) {
+    await setDoc(
+      adminPanelStateRef,
+      {
+        openedAt: serverTimestamp(),
+        openedBy: currentUser.email,
+      },
+      { merge: true },
+    );
+  }
+
   renderAdminPanel();
 }
 
@@ -477,6 +508,29 @@ function renderAdminPanel() {
   });
 }
 
+function renderAdminOpenNotice(data) {
+  const openedAt = data?.openedAt?.toDate?.();
+
+  if (!openedAt) {
+    hideAdminOpenNotice();
+    return;
+  }
+
+  if (Date.now() > openedAt.getTime() + ADMIN_NOTICE_TTL) {
+    hideAdminOpenNotice();
+    return;
+  }
+
+  adminOpenNotice.textContent =
+    "Панель владельца была открыта: " + formatDateTime(openedAt);
+  adminOpenNotice.classList.remove("hidden");
+}
+
+function hideAdminOpenNotice() {
+  adminOpenNotice.textContent = "";
+  adminOpenNotice.classList.add("hidden");
+}
+
 function normalizeImportedItems(items) {
   return items
     .filter((item) => item && (item.title || item.name))
@@ -509,8 +563,8 @@ function normalizeItem(item) {
 }
 
 function updateAuthUi() {
-  loginBtn.style.display = currentUser ? "none" : "";
-  authNotice.classList.toggle("hidden", Boolean(currentUser));
+  loginBtn.style.display = isGoogleUser() ? "none" : "";
+  authNotice.classList.toggle("hidden", isGoogleUser());
   ownerPanel.classList.toggle("hidden", !isOwner());
   adminPanelBtn.style.display = isOwner() ? "" : "none";
 
@@ -521,6 +575,10 @@ function updateAuthUi() {
 
 function isOwner() {
   return currentUser?.email === OWNER_EMAIL;
+}
+
+function isGoogleUser() {
+  return Boolean(currentUser?.email);
 }
 
 function handleActionError(error) {
@@ -540,4 +598,14 @@ function normalizeLink(link) {
   }
 
   return /^https?:\/\//i.test(link) ? link : `https://${link}`;
+}
+
+function formatDateTime(date) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }

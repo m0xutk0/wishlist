@@ -92,7 +92,8 @@ h1 {
 }
 
 .admin-panel.hidden,
-.auth-notice.hidden {
+.auth-notice.hidden,
+.admin-open-notice.hidden {
   display: none;
 }
 
@@ -114,6 +115,15 @@ h1 {
   border-radius: var(--radius-sm);
   background: #fff7e8;
   color: #9a5b0b;
+  padding: 12px 14px;
+  font-weight: 700;
+}
+
+.admin-open-notice {
+  margin: 12px 0 0;
+  border-radius: var(--radius-sm);
+  background: #eef6ff;
+  color: #155a9c;
   padding: 12px 14px;
   font-weight: 700;
 }

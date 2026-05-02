@@ -13,6 +13,10 @@ const firebaseConfig = {
   appId: "1:14410995349:web:fa4f49006d11262425ad9c"
 };
 
+signInAnonymously(auth).then((userCredential) => {
+  console.log("YOUR UID:", userCredential.user.uid);
+});
+
 const app = initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);

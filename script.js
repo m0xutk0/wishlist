@@ -398,19 +398,30 @@ async function openAdminPanel() {
 
   const willOpen = adminPanel.classList.contains("hidden");
   adminPanel.classList.toggle("hidden");
+  renderAdminPanel();
 
   if (willOpen) {
-    await setDoc(
-      adminPanelStateRef,
-      {
-        openedAt: serverTimestamp(),
-        openedBy: currentUser.email,
-      },
-      { merge: true },
-    );
-  }
+    const openedAt = new Date();
+    renderAdminOpenNotice({
+      openedAtMs: openedAt.getTime(),
+      openedBy: currentUser.email,
+    });
 
-  renderAdminPanel();
+    try {
+      await setDoc(
+        adminPanelStateRef,
+        {
+          openedAt: serverTimestamp(),
+          openedAtMs: openedAt.getTime(),
+          openedAtIso: openedAt.toISOString(),
+          openedBy: currentUser.email,
+        },
+        { merge: true },
+      );
+    } catch (error) {
+      console.warn("Не удалось сохранить время открытия панели:", error);
+    }
+  }
 }
 
 async function banUser(email) {
@@ -509,7 +520,7 @@ function renderAdminPanel() {
 }
 
 function renderAdminOpenNotice(data) {
-  const openedAt = data?.openedAt?.toDate?.();
+  const openedAt = getAdminOpenedAt(data);
 
   if (!openedAt) {
     hideAdminOpenNotice();
@@ -524,6 +535,23 @@ function renderAdminOpenNotice(data) {
   adminOpenNotice.textContent =
     "Панель владельца была открыта: " + formatDateTime(openedAt);
   adminOpenNotice.classList.remove("hidden");
+}
+
+function getAdminOpenedAt(data) {
+  if (data?.openedAt?.toDate) {
+    return data.openedAt.toDate();
+  }
+
+  if (typeof data?.openedAtMs === "number") {
+    return new Date(data.openedAtMs);
+  }
+
+  if (data?.openedAtIso) {
+    const parsedDate = new Date(data.openedAtIso);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }
+
+  return null;
 }
 
 function hideAdminOpenNotice() {

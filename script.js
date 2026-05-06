@@ -1,4 +1,4 @@
-import { auth, db, signInWithGoogle } from "./firebase.js";
+import { auth, db, signInWithGoogle, signOutUser } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   addDoc,
@@ -61,7 +61,9 @@ const linkInput = document.querySelector("#link");
 const priceInput = document.querySelector("#price");
 const addBtn = document.querySelector("#addBtn");
 const loginBtn = document.querySelector("#loginBtn");
+const logoutBtn = document.querySelector("#logoutBtn");
 const adminPanelBtn = document.querySelector("#adminPanelBtn");
+const cancelEditBtn = document.querySelector("#cancelEditBtn");
 const deleteAllBtn = document.querySelector("#deleteAllBtn");
 const jsonInput = document.querySelector("#jsonInput");
 const ownerPanel = document.querySelector("#ownerPanel");
@@ -74,6 +76,7 @@ const wishlist = document.querySelector("#wishlist");
 
 let currentUser = null;
 let currentItems = [];
+let editingItemId = null;
 
 const statusLabels = {
   available: "Свободно",
@@ -82,6 +85,7 @@ const statusLabels = {
 };
 
 addBtn.addEventListener("click", addItem);
+cancelEditBtn.addEventListener("click", resetGiftForm);
 adminPanelBtn.addEventListener("click", openAdminPanel);
 deleteAllBtn.addEventListener("click", deleteAllItems);
 jsonInput.addEventListener("change", importJson);
@@ -91,6 +95,15 @@ loginBtn.addEventListener("click", async () => {
     await signInWithGoogle();
   } catch (e) {
     console.error("Login error:", e);
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  try {
+    await signOutUser();
+    resetGiftForm(false);
+  } catch (e) {
+    console.error("Logout error:", e);
   }
 });
 
@@ -147,19 +160,24 @@ async function addItem() {
     return;
   }
 
-  await addDoc(wishlistCollection, {
-    title,
-    link,
-    price,
-    status: "available",
-    reservedBy: null,
-    purchasedBy: null,
-  });
+  if (editingItemId) {
+    await updateDoc(doc(db, "wishlist", editingItemId), {
+      title,
+      link,
+      price,
+    });
+  } else {
+    await addDoc(wishlistCollection, {
+      title,
+      link,
+      price,
+      status: "available",
+      reservedBy: null,
+      purchasedBy: null,
+    });
+  }
 
-  titleInput.value = "";
-  linkInput.value = "";
-  priceInput.value = "";
-  titleInput.focus();
+  resetGiftForm(true);
 }
 
 function renderItems(items) {
@@ -232,6 +250,13 @@ function renderItems(items) {
     actions.append(reserveBtn, purchasedBtn);
 
     if (isOwner()) {
+      const editBtn = document.createElement("button");
+      editBtn.className = "action";
+      editBtn.type = "button";
+      editBtn.textContent = "Редактировать";
+      editBtn.addEventListener("click", () => startEditItem(normalizedItem));
+      actions.append(editBtn);
+
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "action delete";
       deleteBtn.type = "button";
@@ -243,6 +268,33 @@ function renderItems(items) {
     card.append(actions);
     wishlist.append(card);
   });
+}
+
+function startEditItem(item) {
+  if (!isOwner()) {
+    return;
+  }
+
+  editingItemId = item.id;
+  titleInput.value = item.title;
+  linkInput.value = item.link;
+  priceInput.value = item.price;
+  addBtn.textContent = "Сохранить";
+  cancelEditBtn.classList.remove("hidden");
+  titleInput.focus();
+}
+
+function resetGiftForm(shouldFocus = false) {
+  editingItemId = null;
+  titleInput.value = "";
+  linkInput.value = "";
+  priceInput.value = "";
+  addBtn.textContent = "Добавить";
+  cancelEditBtn.classList.add("hidden");
+
+  if (shouldFocus) {
+    titleInput.focus();
+  }
 }
 
 async function updateStatus(id, status) {
@@ -592,12 +644,14 @@ function normalizeItem(item) {
 
 function updateAuthUi() {
   loginBtn.style.display = isGoogleUser() ? "none" : "";
+  logoutBtn.style.display = isGoogleUser() ? "" : "none";
   authNotice.classList.toggle("hidden", isGoogleUser());
   ownerPanel.classList.toggle("hidden", !isOwner());
   adminPanelBtn.style.display = isOwner() ? "" : "none";
 
   if (!isOwner()) {
     adminPanel.classList.add("hidden");
+    resetGiftForm(false);
   }
 }
 

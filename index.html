@@ -16,6 +16,7 @@
       <section class="panel" aria-label="Управление списком">
         <div class="auth-bar">
           <button id="loginBtn" type="button">Войти через Google</button>
+          <button id="logoutBtn" type="button" style="display: none">Выйти</button>
           <button id="adminPanelBtn" type="button" style="display: none">
             Панель владельца
           </button>
@@ -37,6 +38,9 @@
           </div>
 
           <div class="owner-actions">
+            <button id="cancelEditBtn" class="secondary-button hidden" type="button">
+              Отмена
+            </button>
             <label class="file-button">
               Загрузить JSON
               <input id="jsonInput" type="file" accept="application/json" />

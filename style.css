@@ -93,7 +93,8 @@ h1 {
 
 .admin-panel.hidden,
 .auth-notice.hidden,
-.admin-open-notice.hidden {
+.admin-open-notice.hidden,
+.secondary-button.hidden {
   display: none;
 }
 
@@ -174,9 +175,11 @@ input:focus {
 
 #addBtn,
 #loginBtn,
+#logoutBtn,
 #adminPanelBtn,
 .file-button,
 .danger-button,
+.secondary-button,
 .action {
   border: 0;
   border-radius: 999px;
@@ -188,8 +191,10 @@ input:focus {
 }
 
 #loginBtn,
+#logoutBtn,
 #adminPanelBtn,
-.file-button {
+.file-button,
+.secondary-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -199,8 +204,10 @@ input:focus {
 }
 
 #loginBtn:hover,
+#logoutBtn:hover,
 #adminPanelBtn:hover,
-.file-button:hover {
+.file-button:hover,
+.secondary-button:hover {
   background: #e2e2e7;
   transform: translateY(-1px);
 }
@@ -432,9 +439,11 @@ input:focus {
 
   #addBtn,
   #loginBtn,
+  #logoutBtn,
   #adminPanelBtn,
   .file-button,
-  .danger-button {
+  .danger-button,
+  .secondary-button {
     min-height: 48px;
   }
 }

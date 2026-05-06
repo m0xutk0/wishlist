@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
 import {
   getAuth,
   GoogleAuthProvider,
+  signOut,
   signInWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -24,4 +25,8 @@ export const auth = getAuth(app);
 
 export function signInWithGoogle() {
   return signInWithPopup(auth, provider);
+}
+
+export function signOutUser() {
+  return signOut(auth);
 }
